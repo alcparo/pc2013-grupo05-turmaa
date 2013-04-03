@@ -21,14 +21,14 @@ Borwein
       gcc borwein_sequencial.c -o borwein_sequencial -lgmp -lm
 
       Para executar:
-      ./borwein_sequencial.out
+      ./borwein_sequencial
 
       Versão Paralela
       Para compilar:
       gcc borwein_paralelo.c -o borwein_paralelo -lgmp -lpthread -lm
 
       Para executar:
-      ./borwein_paralelo.out
+      ./borwein_paralelo
 
 
 Monte Carlo
