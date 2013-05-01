@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 #define NUMTHR 4
-#define POTENC 9
+#define POTENC 7
 #define PRECISION 128
 
 mpf_t ptsCirc,ptsTot;
@@ -34,7 +34,7 @@ pthread_spinlock_t spinlock;	//declaração do multiplex para controle das threa
 
 
 void *monte_carlo(){
-	long i;
+	
 	mpf_t px,py;
 
 	mpf_init(py);
@@ -72,7 +72,7 @@ void *monte_carlo(){
 	}
 	mpf_clear(py);
 	mpf_clear(px);
-	pthread_exit(0);			//desnecessariamente finaliza a thread (pode ignorar essa linha se quiser) mas é bom colocar
+	pthread_exit(0);			//Finaliza a thread
 }
 
 int main(void) {
@@ -107,16 +107,18 @@ int main(void) {
 	}
 
 	ini=time(NULL)-ini;
-	//printf("Tempo=%lds %ld interacoes\n",ini,amostras);
+
+	/* Imprime na tela o calculo do PI. A impressao na tela foi escolhida pois
+	* o algoritmo fornece numeros com poucas casas decimais de precisao */
 	printf("Tempo de execucao: %lds segundos\nIteracoes: %ld\n", ini, amostras);
-//Free**********************************************************************************************
+
+	/* Liberacao de memoria */
 	pthread_spin_destroy(&spinlock);//da um free no multiplex
 	mpf_clear(ptsCirc);
 	mpf_clear(ptsTot);
 	gmp_randclear (rnd);
 	mpf_clear(val);
 	mpf_clear(px);
-//**************************************************************************************************
 
 
 	return 0;
