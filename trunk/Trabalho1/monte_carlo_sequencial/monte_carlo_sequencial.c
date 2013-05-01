@@ -26,13 +26,13 @@
 #define PRECISION 128
 
 int main(void) {
-//Declaration**************************************************************************************
+	/* Declaracao de variaveis */
 	mpf_t ptsCirc;
 	mpf_t px,py,val;
 	gmp_randstate_t rnd;
 	unsigned long i=0,ini=0, amostras=0;
-//*************************************************************************************************
-//init vars****************************************************************************************
+	
+	/* Inicializacao de variaveis*/
 	mpf_init(ptsCirc);
 	mpf_set_default_prec(PRECISION);
 	mpf_init(py);
@@ -44,8 +44,8 @@ int main(void) {
 	gmp_randinit_mt(rnd);
 	gmp_randseed_ui(rnd,time (NULL));
 	ini=time(NULL);	
-//*************************************************************************************************
-//Main loop****************************************************************************************
+
+	/* Loop principal do algoritmo */
 	for(i = 0; i<amostras; i++) {
 		mpf_urandomb(px,rnd,PRECISION);
 		mpf_urandomb(py,rnd,PRECISION);    
@@ -57,14 +57,16 @@ int main(void) {
 		if(mpf_cmp_d(px,1.0)<=0){
 			mpf_add_ui(ptsCirc,ptsCirc,1);
 		}
-//*************************************************************************************************
-//CalcPI*******************************************************************************************
+		
+  
+		/* Realiza o calculo do PI */
 		if(i % 10000000==0 && i>0){
 			mpf_set_ui(py,i);
 			mpf_div(px,ptsCirc,py);
 			mpf_mul_ui(px,px,4);
-//**************************************************************************************************
-//Output********************************************************************************************
+
+			/* Imprime na tela o calculo do PI. A impressao na tela foi escolhida pois
+			 * o algoritmo fornece numeros com poucas casas decimais de precisao */
 			char *output;
 			mp_exp_t exp;
 			output = mpf_get_str(NULL, &exp, 10, 0, px);
@@ -72,16 +74,18 @@ int main(void) {
 		}
 	}
 
-//**************************************************************************************************
+	/* Calculo do tempo de execucao */
 	ini=time(NULL)-ini;
 	//printf("Tempo=%lds %ld interacoes\n",ini,amostras);
 	printf("Tempo de execucao: %lds segundos\nIteracoes: %ld\n", ini, amostras);
-//Free**********************************************************************************************
+	
+	/* Liberacao de memória */
 	mpf_clear(ptsCirc);
 	gmp_randclear (rnd);
 	mpf_clear(val);
 	mpf_clear(px);
 	mpf_clear(py);
-//**************************************************************************************************
+
+	
 	return 0;
 }
