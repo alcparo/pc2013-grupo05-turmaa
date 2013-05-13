@@ -17,8 +17,8 @@ Palindromo Paralelo openMP
 Palindromo Paralelo MPI
 
       Para compilar:
-      mpicc palindromo_mpi.c
+      mpicc palindromo_mpi.c -o palindromo_mpi
 
-      Para executar:
-      mpirun -np 5 --host node06,node02,node03,node04,node05 <arquivo_de_saida.out> <arquivo_de_entrada>
+      Para executar (via ssh no cluster desejado):
+      mpirun -np 5 --host node06,node02,node03,node04,node05 palindromo_mpi <arquivo_de_entrada>
 
