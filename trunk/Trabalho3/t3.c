@@ -183,7 +183,7 @@ int main(int argc, char * argv[]){
 		
 	
 	} else if(MPI_RANK!=(MPI_NUMTASKS-1)){
-		double startTime2 = omp_get_wtime( );
+		double startTime2;
 		double endTimeAux2;
 	
 		
@@ -234,7 +234,7 @@ int main(int argc, char * argv[]){
 		
 		
 		int foundWords = 0;
-		
+		startTime2 = omp_get_wtime( );
 		while(foundWords<(wordCount)){			
 				
 			
