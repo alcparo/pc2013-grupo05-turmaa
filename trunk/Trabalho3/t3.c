@@ -1,3 +1,26 @@
+/**
+ * 	Instituto de Ciencias Matematicas e de Computacao - USP Sao Carlos
+ * 
+ * 	Programacao Concorrente 2013
+ *	Grupo 05 Turma A
+ *
+ *	Andre Luiz Catini Paro, 	7152740 
+ * 	Daniel Hideki Yoshimi,		7239173
+ * 	Rodrigo Toledo Amancio Silva,	7152308
+ * 
+ * 	Trabalho 3 - Geracao aleatoria de palavras
+ *
+ *	Este programa gera palavras aleatorias de ate 5 letras e verifica se ela
+ * 	se encontra no arquivo texto de entrada. Palavras com mais de 5 letras sao
+ * 	geradas a partir das palavras menores previamente encontradas.
+ * 
+ * 	Ele retorna os tempos de processamento de 3 etapas:
+ * 		-Leitura do arquivo de entrada;
+ * 		-Geracao das palavras pequenas;
+ * 		-Combinação das palavras pequenas em palavras grandes.
+ * 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -148,12 +171,7 @@ int main(int argc, char * argv[]){
 		MPI_Send(bufferBig, lengthBufferBig, MPI_CHAR, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);		
 		MPI_Send(&wordBigCount, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);
 		
-		
-		
-		
-		
-		//DIVISAO DO BUFFER DE PALAVRAS PEQUENAS EM N PEDACOS (N = NUMERO DE NOS INTERMEDIARIOS)
-		//int lengthBufferSmall = (int)strlen(bufferSmall);
+
 		
 		int ARRAYSIZE = MPI_NUMTASKS-2;
 		char* bufferArray[ARRAYSIZE];		
@@ -215,20 +233,18 @@ int main(int argc, char * argv[]){
 			wordCount++;
 
 		}
-		
-		//printf("word count\t%d\n", wordCount);
+
 		
 		smSmall = sm_new(wordCount);
 		for(itAux=wordsAux; itAux && *itAux; ++itAux){
 			
 			sm_put(smSmall, *itAux, *itAux);
 		}
-		
-		//sm_enum(smSmall, iter, NULL);
+
 		
 		char* bufferFoundWords = (char*)malloc(sizeof(char)*lengthBufferSmall);
-		//char end[1]={'\0'};
-		//strcpy(bufferAchadas, end);
+
+		
 		int percent, percentFound=1;
 		
 		
@@ -239,9 +255,7 @@ int main(int argc, char * argv[]){
 				
 			
 				index = generateIndex();
-				
-				
-				//char* word = (char*) malloc(sizeof(char)*(length+1));
+
 				char randomWord[index+1];
 				
 				#pragma omp for
@@ -253,14 +267,14 @@ int main(int argc, char * argv[]){
 				randomWord[index]='\0';
 				
 				if(sm_get(smSmall, randomWord, buf, sizeof(buf)) && strcmp(buf,"-1")){
-					//#pragma omp critical
-					//{
+					
+					
 						foundWords++;
 						//if(foundWords>=(wordCount*0.95)) printf("%d\n", foundWords);
 						
 						sm_put(smSmall, randomWord, "-1");
 						addToBuffer(bufferFoundWords, randomWord);
-					//}
+					
 						for(percent=percentFound; percent<=10; percent++){
 							
 							if(foundWords == (int)(wordCount*((float)percent/10))){
@@ -269,7 +283,6 @@ int main(int argc, char * argv[]){
 								endTimeAux2 = omp_get_wtime( );
 								
 								times[percent-1] = (endTimeAux2-startTime2);
-								//printf("Node %d\t%d %%\t%lf s\n", MPI_RANK, (percent*10), endTimeAux2-startTime2);
 								percentFound++;
 								
 							}
@@ -282,10 +295,6 @@ int main(int argc, char * argv[]){
 		
 		}
 		
-		//printf("RANK %d\t PROCESSO %d\t%d\n", MPI_RANK, omp_get_thread_num(), foundWords);
-					
-
-		//bufferAchadas = (char*)realloc(bufferAchadas, sizeof(char)*strlen(bufferAchadas));
 		int sizeOfBufferFoundWords = (int)strlen(bufferFoundWords)+1;
 
 		MPI_Send(&foundWords, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);		
@@ -366,7 +375,6 @@ int main(int argc, char * argv[]){
 			MPI_Recv(times[i-1], 10, MPI_DOUBLE, i, tag, MPI_COMM_WORLD, &status);
 			
 		}
-		//printf("PALAVRAS ACHADAS: %d\n\n", smallWordsFound);
 		
 		
 		double timeAux;					
@@ -410,30 +418,26 @@ int main(int argc, char * argv[]){
 
 			sm_put(smSmall, *itAux2, *itAux2);
 		}
-			
-		//printf("CONSTRUIU\n");
-	
+		
+		
 		double startTime3 = omp_get_wtime( );
 		double endTimeAux3;
 		//printf("Inicio combinacoes\n");
 		#pragma omp parallel private(bigWordsFoundAux, countAux) shared(smSmall) reduction(+: bigWordsFound)
 		{	
 			
-			//printf("THREAD: \t%d\n\n", omp_get_thread_num());
 			
 			bigWordsFoundAux=0;
 			char** words = wordTokenize(bufferArray[omp_get_thread_num()]);
 			char** it;
-			//printf("%s\n", bufferBig);
-			
+				
 			int k, l;
 			int lengthAux;
 			int lengthAuxDivided;
 			
-			//char end[1]={'\0'};
+			
 			char wordAux[6];
 			
-			//wordAux[0]=wordAux[1]=wordAux[2]=wordAux[3]=wordAux[4]=wordAux[5]='\0';
 				for(it=words; it && *it; ++it){
 					
 					for(k=5; k>0; k--){
@@ -450,14 +454,10 @@ int main(int argc, char * argv[]){
 						
 						
 						for(l=0; l<lengthAuxDivided; l++){
-							//char* wordAux=(char*)malloc(sizeof(char)*6);
-							strncpy(wordAux, *it+(l*k), k);						
-							//strcat(wordAux, end);
-							//wordAux[5]='\0';
-							//printf("%s\t", wordAux);
+						
+							strncpy(wordAux, *it+(l*k), k);					
 							
 							if(sm_get(smSmall, wordAux, buf, sizeof(buf))){
-								//printf("%s\t", wordAux);
 									countAux--;
 							} else{
 								break;
@@ -465,7 +465,7 @@ int main(int argc, char * argv[]){
 						}
 						
 						if(countAux == 0){
-							//printf("ACHOU!: %s\n", *it);
+
 							bigWordsFoundAux++;
 							#pragma omp critical
 							{
@@ -473,7 +473,7 @@ int main(int argc, char * argv[]){
 							}
 							break;
 						}
-						//printf("\n");
+				
 					}
 				}
 				
@@ -483,19 +483,12 @@ int main(int argc, char * argv[]){
 		endTimeAux3 = omp_get_wtime( );
 		printf("Tempo de combinacao: %lf\n",endTimeAux3-startTime3);
 		
-		//printf("Fim combinacoes\n");
-			
-
-		//printf("STOP\n");
-		//printf("RANK %d TERMINOU\tFOUND BIG: %d\n", MPI_RANK, bigWordsFound);
 		MPI_Send(&bigWordsFound, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 				
 		
 	}
 	
-	//printf("RANK %d TERMINOU\n", MPI_RANK);
-		
-
+	
 	MPI_Finalize();
 
 	return 0;
@@ -516,10 +509,6 @@ void addToBuffer(char* buffer, char* str){
 }
 
 int generateIndex(){
-	//int r = 1+(rand()%5);	
-	//return r;
-	
-	
 	
 	unsigned length;
 	length = rand()%TOTAL_FIVE;
@@ -534,10 +523,7 @@ int generateIndex(){
 	else 
 		length = 1;
 	
-	//printf("%d\n", length);
-	return length;
-	
-	
+	return length;	
 }
 
 char* generateWord(int length){
@@ -565,7 +551,7 @@ void bufferDivision(char *buffer, char **bufferArray, int size){
 	/* Declaracao de variaveis */
 	int bufferBegin[ARRAYSIZE], bufferEnd[ARRAYSIZE]; // Variaveis que irao armazenar o inicio e fim de cada particao do texto de entrada.
 	int bufferSize = (bufferLength / ARRAYSIZE); // Variavel que ira armazena o tamanho inicial de cada particao do arquivo de entrada.
-	//bufferArray[ARRAYSIZE]; // Array que ira armazenar cada particao do arquivo de entrada.
+	
 	int divided = 0; // Variavel de controle para verificar se o arquivo de entrada terminou de ser particionado.
 	
 	/* Estrutura de repeticao que realiza o calculo das posicoes de inicio e fim iniciais das particoes do arquivo de entrada */
