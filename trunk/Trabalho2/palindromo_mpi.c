@@ -40,6 +40,7 @@ char** wordTokenize(const char* str);
 char** wordTokenizeDetails(const char* str);
 char** phraseTokenize(const char* str);
 int crivoEratostenes(int num);
+int partition(int novoinicio, char *buffer, int lSize);
 
 /**
  *  	int main(int argc, char * argv[])
@@ -116,8 +117,10 @@ int main(int argc, char * argv[]){
 	double start_t, end_t;
 
 	/*rank = 0 -> processo master*/
-	start_t = MPI_Wtime();
+	
 	if(rank==0){
+		start_t = MPI_Wtime();
+		double t1 = MPI_Wtime();
 		int s1, wordPalindromeCountTot=0, s2, phrasePalindromeCountTot=0, s3, s4, wordPrimeCountTot=0, phrasePrimeCountTot=0;
 		for(i=1;i<5;i++){
 			divisao=(i*lSize)/4;
@@ -126,6 +129,7 @@ int main(int argc, char * argv[]){
 			if(!posicao){ //Se fim de arquivo
 				bufferenvio = (char*) malloc (sizeof(char)*(lSize-inicio));
 				total = lSize-inicio;
+				bufferenvio[lSize-inicio]='\0';	
 				fread(bufferenvio, 1, (lSize-inicio), pFile);
 			}else{
 				bufferenvio = (char*) malloc (sizeof(char)*(posicao-inicio));
@@ -136,12 +140,16 @@ int main(int argc, char * argv[]){
 				/*atualiza o novo inicio*/
 				inicio = posicao+1;
 			}
+			fprintf(stderr, "%s[%d] - vou enviar ao processo %d\n", computerName, rank, i);
 			/*envia o tamanho e o arquivo particionado*/
 			MPI_Send(&total, 1, MPI_INT, i, tag, MPI_COMM_WORLD);
 			MPI_Send(bufferenvio, total, MPI_CHAR, i, tag, MPI_COMM_WORLD);
 		}
+		double t2 = MPI_Wtime();
+		printf("\nEnviei e estou esperando os valores %s[%d] em %f segundos\n\n",computerName, rank, t2-t1);
 		free(bufferenvio);
 
+		double t3 = MPI_Wtime();
 		/*recebe os processamentos*/
 		for(i=1;i<5;i++){
 			MPI_Recv(&s1, 1, MPI_INT, i, tag, MPI_COMM_WORLD, &status);
@@ -155,12 +163,12 @@ int main(int argc, char * argv[]){
 				phrasePrimeCountTot+=s4;
 			}
 		}
-		end_t = MPI_Wtime();
-		printf("Tempo total: %f\n", end_t-start_t);
-		if(!strcmp(argv[1], "shakespe.txt")){
-			printf("%s\nWord palindromes: %d\nPhrase palindromes: %d\n", argv[1], wordPalindromeCountTot, phrasePalindromeCountTot);
-		} else if(!strcmp(argv[1], "wikipedia.txt")){
-			printf("%s\nWord palindromes: %d\t\tWord prime palindromes: %d\nPhrase palindromes: %d\t\tPhrase prime palindromes: %d\n",argv[1], wordPalindromeCountTot, wordPrimeCountTot, phrasePalindromeCountTot, phrasePrimeCountTot);
+		double t4 = MPI_Wtime();
+		printf("Recebi todos os valores %s[%d] em %f segundos\n",computerName, rank, t4-start_t);
+		if(!strcmp(argv[1], "shakespe.txt")){		
+			printf("%s\nWord palindromes: %d\nPhrase palindromes: %d\n\n", argv[1], wordPalindromeCountTot, phrasePalindromeCountTot);
+		} else if(!strcmp(argv[1], "wikipedia.txt")){				
+			printf("%s\nWord palindromes: %d\t\tWord prime palindromes: %d\nPhrase palindromes: %d\t\tPhrase prime palindromes: %d\n\n",argv[1], wordPalindromeCountTot, wordPrimeCountTot, phrasePalindromeCountTot, phrasePrimeCountTot);
 		}
 	}
 	/*outros 4 processos irão receber e processar cada parte da string*/
@@ -172,9 +180,21 @@ int main(int argc, char * argv[]){
 		bufferrec = malloc(total*sizeof(char));
 		MPI_Recv(bufferrec, total, MPI_CHAR, source, tag, MPI_COMM_WORLD, &status);
 
+		double start_t1 =0;
+		start_t1 = MPI_Wtime();
 		/*processa os valores*/
 		wordPalindromeCount = wordPalindrome(bufferrec, argv[1], wordPrimeCount);
 		phrasePalindromeCount = phrasePalindrome(bufferrec, argv[1], phrasePrimeCount);
+		
+		double end_t1 = MPI_Wtime();
+		printf("\n\nTempo processamento parcial %s[%d]: %f\n", computerName, rank, end_t1-start_t1);	
+
+		if(!strcmp(argv[1], "shakespe.txt")){		
+			printf("%s\nWord palindromes: %d\nPhrase palindromes: %d\n", computerName, wordPalindromeCount, phrasePalindromeCount);
+		} else if(!strcmp(argv[1], "wikipedia.txt")){				
+			printf("%s\nWord palindromes: %d\t\tWord prime palindromes: %d\nPhrase palindromes: %d\t\tPhrase prime palindromes: %d\n",computerName, wordPalindromeCount, *wordPrimeCount, phrasePalindromeCount, *phrasePrimeCount);
+		}
+		
 		MPI_Send(&wordPalindromeCount, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 		MPI_Send(&phrasePalindromeCount, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
