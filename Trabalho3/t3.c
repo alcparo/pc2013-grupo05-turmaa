@@ -171,26 +171,21 @@ int main(int argc, char * argv[]){
 	
 		//RECEBE O TOTAL DE PALAVRAS GRANDES ENCONTRADAS
 		int bigWordsFound, smallWordsFound;
-		MPI_Recv(&smallWordsFound, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD, &status);		
-		MPI_Recv(&bigWordsFound, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD, &status);		
+		double timeMeans[10];
+		MPI_Recv(&smallWordsFound, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD, &status);				
+		MPI_Recv(timeMeans, 10, MPI_DOUBLE, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD, &status);
+		MPI_Recv(&bigWordsFound, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD, &status);	
 		
+		printf("\nPalavras grandes encontradas: %d\tPalavras pequenas encontradas: %d\n", bigWordsFound ,smallWordsFound);
+		printf("Tempos de execução por medio %% de palavras pequenas encontradas:\n");
+		for(i=0; i<10; i++) printf("%d%%\t%lf\n", (i+1)*10, timeMeans[i]);
+		printf("\n");
 		
-		//printf("\nTOTAL SMALL: %d\n\n", smallWordsFound);
-		//printf("\nTOTAL BIG: %d\n\n", bigWordsFound);
-		
-		//double timeEnd = omp_get_wtime( );	
-		//printf("Execution time: %lf\n",timeEnd-timeStart);
-		//printf("FIM\n");
-		
-		//sm_enum(smSmall, iter, NULL);
-		
-	
 	
 	} else if(MPI_RANK!=(MPI_NUMTASKS-1)){
 		double startTime2 = omp_get_wtime( );
 		double endTimeAux2;
 	
-		
 		
 		char buf[256];
 		srand (time(NULL)/MPI_RANK);
@@ -198,6 +193,10 @@ int main(int argc, char * argv[]){
 		int index;
 		int i, r;
 		
+		
+		
+		double times[10];
+
 		
 		//RECEBE OS BUFFERS DE PALAVRAS PEQUENAS
 		int lengthBufferSmall;
@@ -265,9 +264,14 @@ int main(int argc, char * argv[]){
 						for(percent=percentFound; percent<=10; percent++){
 							
 							if(foundWords == (int)(wordCount*((float)percent/10))){
-									percentFound++;
+								
+								
 								endTimeAux2 = omp_get_wtime( );
-								printf("Node %d\t%d %%\t%lf s\n", MPI_RANK, (percent*10), endTimeAux2-startTime2);
+								
+								times[percent-1] = (endTimeAux2-startTime2);
+								//printf("Node %d\t%d %%\t%lf s\n", MPI_RANK, (percent*10), endTimeAux2-startTime2);
+								percentFound++;
+								
 							}
 						}
 						
@@ -287,13 +291,14 @@ int main(int argc, char * argv[]){
 		MPI_Send(&foundWords, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);		
 		MPI_Send(&sizeOfBufferFoundWords, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);
 		MPI_Send(bufferFoundWords, sizeOfBufferFoundWords, MPI_CHAR, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);
-		
-		
-		//endTime2 = omp_get_wtime( );
-		
+		MPI_Send(times, 10, MPI_DOUBLE, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD);
+			
 	} else {
-		int i;
-	
+		int i, k;
+		double timeMeans[10];
+		
+		for(i=0; i<10; i++) timeMeans[i]=0;
+		
 		char buf[256];
 		
 		//BUFFER PALAVRAS GRANDES
@@ -338,6 +343,13 @@ int main(int argc, char * argv[]){
 		
 		char* bufferAux[MPI_NUMTASKS-2];
 		
+		
+		double *times[MPI_NUMTASKS-2];
+		for(i=0; i<MPI_NUMTASKS-2; i++)
+			times[i] = (double*)malloc(sizeof(double)*10);
+		
+		//double times[MPI_NUMTASKS-2][10];
+		
 		#pragma omp for
 		for(i=1; i<MPI_NUMTASKS-1; i++){
 			
@@ -350,13 +362,27 @@ int main(int argc, char * argv[]){
 			bufferAux[i-1] = (char*)malloc(sizeof(char)*lengthBufferSmallAux);
 			MPI_Recv(bufferAux[i-1], lengthBufferSmallAux, MPI_CHAR, i, tag, MPI_COMM_WORLD, &status);
 			lengthBufferSmall+=lengthBufferSmallAux;
-			//printf("%s\n\n", bufferAux[i-1]);
+			
+			MPI_Recv(times[i-1], 10, MPI_DOUBLE, i, tag, MPI_COMM_WORLD, &status);
+			
 		}
 		//printf("PALAVRAS ACHADAS: %d\n\n", smallWordsFound);
 		
 		
-		MPI_Send(&smallWordsFound, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);	
+		double timeAux;					
+	
+		for(i=0;i<10;i++){
+			timeAux=0;
+			for(k=0;k<MPI_NUMTASKS-2;k++){
+				timeAux+=times[k][i];
+			}
+			timeMeans[i] = timeAux/(MPI_NUMTASKS-2);
+		}
 		
+	
+		
+		MPI_Send(&smallWordsFound, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);	
+		MPI_Send(timeMeans, 10, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);	
 		
 		
 		char* bufferSmallFound = (char*)malloc(sizeof(char)*lengthBufferSmall);
