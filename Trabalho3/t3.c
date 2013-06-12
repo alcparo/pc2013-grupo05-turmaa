@@ -29,14 +29,13 @@
 #include <omp.h>
 #include <time.h>
 
-#define TOTAL_ONE 24
+#define TOTAL_ONE 26
 #define TOTAL_TWO 196
 #define TOTAL_THREE 847
 #define TOTAL_FOUR 2590
 #define TOTAL_FIVE 4441
 
 char** wordTokenize(const char* str);
-char* generateWord(int length);
 static void iter(const char *key, const char *value, const void *obj);
 int generateIndex();
 void addToBuffer(char* buffer, char* str);
@@ -46,8 +45,25 @@ void bufferDivision(char *buffer, char **bufferArray, int size);
 int NUMTHREADS; // Variavel que ira armazenar a quantidade de threads utilizadas pelo openMP
 int MPI_NUMTASKS, MPI_RANK, tag=1;
 
-
-
+/**
+ *  	int main(int argc, char * argv[])
+ * 
+ *	Descricao:
+ * 		Função principal. Nela esta codificada a nossa "topologia" para o problema:
+ * 			- No mestre: Responsável pela leitura e processamento do arquivo de entrada,
+ * 			bem como enviar e receber informações dos outros nós.
+ * 			- Nos intermediarios: Geram as palavras aleatoriamente.
+ * 			- No final: Gera as combinações possiveis de palavras grandes utilizando as palavras
+ * 			pequenas encontradas.
+ * 
+ * 	Parametros de entrada:
+ * 		- argc: Quantidade de parametros de entrada junto a execucao do programa.
+ * 		- argv: Array contendo strings com cada parametro de entrada.
+ * 
+ * 	Parametros de saida:
+ * 		- (int): Retorna 0 caso o programa seja executado com sucesso. 
+ * 	
+ */
 int main(int argc, char * argv[]){
 	
 	MPI_Status status;	
@@ -195,7 +211,7 @@ int main(int argc, char * argv[]){
 		MPI_Recv(&bigWordsFound, 1, MPI_INT, MPI_NUMTASKS-1, tag, MPI_COMM_WORLD, &status);	
 		
 		printf("\nPalavras grandes encontradas: %d\tPalavras pequenas encontradas: %d\n", bigWordsFound ,smallWordsFound);
-		printf("Tempos de execução por medio %% de palavras pequenas encontradas:\n");
+		printf("Tempos de execução medio por %% de palavras pequenas encontradas:\n");
 		for(i=0; i<10; i++) printf("%d%%\t%lf\n", (i+1)*10, timeMeans[i]);
 		printf("\n");
 		
@@ -495,7 +511,21 @@ int main(int argc, char * argv[]){
 }
 
 
-
+/**
+ *  	void addToBuffer(char* buffer, char* str)
+ * 
+ *	Descricao:
+ * 		Adiciona a string str no fim do buffer. Ao adicionar insere um '\n' para
+ *		que cada string adicionada fique numa linha.	
+ * 
+ * 	Parametros de entrada:
+ * 		- char* buffer: Buffer a ser utilizado.
+ * 		- char* str: String a ser inserida.
+ * 
+ * 	Parametros de saida:
+ * 		- 
+ * 	
+ */
 void addToBuffer(char* buffer, char* str){
 	size_t bufferLenght, strLength;
 	char n[1]={'\n'};
@@ -508,6 +538,21 @@ void addToBuffer(char* buffer, char* str){
 	memcpy(buffer+bufferLenght+strLength+1, end, sizeof(char));
 }
 
+/**
+ *  	generateIndex()
+ * 
+ *	Descricao:
+ * 		Gera aleatoriamente um tamanho para a palavra aleatoria. Para cada tamanho
+ * 		e atribuido um peso a fim de gerar tamanhos maiores de uma forma mais frequente.
+ * 		SOlucao discutida com outros grupos.
+ * 
+ * 	Parametros de entrada:
+ * 		- 
+ * 
+ * 	Parametros de saida:
+ * 		- int: Tamanho da palavra a ser gerada, de 1 a 5.
+ * 	
+ */
 int generateIndex(){
 	
 	unsigned length;
@@ -526,24 +571,22 @@ int generateIndex(){
 	return length;	
 }
 
-char* generateWord(int length){
-	
-	int i;
-	int r;
-	char* word = (char*) malloc(sizeof(char)*(length+1));
-	
-	for(i=0; i<length; i++){
-		r = 97 + (rand() % 26); //rand() % 26 entre 0 e 25 - 97 a 122
-		word[i] = (char)r;
-	}	
-	
-	word[length]='\0';
-	
-	return word;
-}
-
-
-
+/**
+ *  	void bufferDivision(char *buffer, char **bufferArray, int size)
+ * 
+ *	Descricao:
+ * 		Realiza a divisao do buffer em grupos de tamanho size. O delimitador para essa divisao
+ * 		e o '\n'.
+ * 
+ * 	Parametros de entrada:
+ * 		- char* buffer: Buffer a ser dividido.
+ * 		- char **bufferArray: Array que ira armazenar as divisoes dos buffers.
+ * 		- int size: A quantidade de grupos que o buffer sera dividido.
+ * 
+ * 	Parametros de saida:
+ * 		- 
+ * 	
+ */
 void bufferDivision(char *buffer, char **bufferArray, int size){
 	int ARRAYSIZE = size;
 	int bufferLength = (int)strlen(buffer);	
@@ -583,7 +626,22 @@ void bufferDivision(char *buffer, char **bufferArray, int size){
 
 }
 
-
+/**
+ *  	char** wordTokenize(const char* str)
+ * 
+ Descricao:
+ * 		Funcao que realiza o parser do arquivo de entrada em palavras.
+		Este codigo, mais otimizado do que simplesmente utilizar "strtok()", foi encontrado no link a seguir e, 
+ * 		entao, adaptado para o nosso problema.
+ * 		http://stackoverflow.com/questions/8106765/using-strtok-in-c
+ * 
+ * 	Parametros de entrada:
+ * 		- str: String a ser realizado o parser.
+ * 
+ * 	Parametros de saida:
+ * 		- (char**): Ponteiro para o resultado do parser. Cada posicao aponta para o trecho da entrada "parseada".
+ * 	
+ */
 char** wordTokenize(const char* str)
 {
 	/* Inicializacao de variaveis */
@@ -610,6 +668,22 @@ char** wordTokenize(const char* str)
 	return result;
 }
 
+/**
+ *  	static void iter(const char *key, const char *value, const void *obj)
+ * 
+ *	Descricao:
+ * 		Funcao de iteracao utilizada para enumerar todos os itens da hash table.
+ *		Funcao utilizada pelo grupo apenas para begug.	
+ * 	
+ * 	Parametros de entrada:
+ * 		- const char *key: Chave da hash table.
+ * 		- const char * value: Valor referente a chave.
+ * 		- void* obj: Se necessario, objeto a ser passado para funcao e posteriormente retornado.
+ * 
+ * 	Parametros de saida:
+ * 		- 
+ * 	
+ */
 static void iter(const char *key, const char *value, const void *obj)
 {
     printf("key: %s value: \t\t\t%s\n", key, value);
