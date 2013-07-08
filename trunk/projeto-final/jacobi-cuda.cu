@@ -26,7 +26,7 @@
 #include <math.h>
 #include <float.h>
 
-#define TPB 128
+#define TPB 256
 
 /* Declarações de parâmetros */
 void printMA(int J_ORDER, float *MA); // Função para debug. Imprime a matrix MA.
@@ -237,6 +237,7 @@ int main(int argc, char * argv[]){
 	float maxDif, maxX, Mr;	
 	Mr = FLT_MAX;
 		
+	float cmpAux1, cmpAux2;
 	/* Estrutura de repetição que irá realizar chamadas ao quernel jacobi, calcular o novo valor de X e o erro */
 	while(ite < J_ITE_MAX && Mr > J_ERROR){
 		
@@ -255,11 +256,13 @@ int main(int argc, char * argv[]){
 			Xold[i] = X[i];
 			X[i] = (MB[i] - sum[i]); // Novo X
 			
-			if(fabs(X[i] - Xold[i]) > maxDif)
-				maxDif = fabs(X[i] - Xold[i]);
-				
-			if(fabs(X[i]) > maxX)
-				maxX = fabs(X[i]);
+			cmpAux1 = fabs(X[i] - Xold[i]);
+			if(cmpAux1 > maxDif)
+				maxDif = cmpAux1;
+			
+			cmpAux2 = fabs(X[i]);
+			if(cmpAux2 > maxX)
+				maxX = cmpAux2;
 		}
 		
 		Mr = maxDif / maxX; // Erro
@@ -303,8 +306,8 @@ int main(int argc, char * argv[]){
  */		
 void printMA(int J_ORDER, float *MA){
 	int i,j;
-	for(i = 0; i<750; i++){
-		for(j = 0; j<750; j++){
+	for(i = 0; i<J_ORDER; i++){
+		for(j = 0; j<J_ORDER; j++){
 			printf("%f ", MA[j*J_ORDER+i]);
 		}
 		printf("\n");

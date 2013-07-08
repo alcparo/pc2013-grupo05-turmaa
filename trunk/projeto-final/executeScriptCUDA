@@ -1,0 +1,22 @@
+#!/bin/bash
+
+echo "CUDA: 250"
+time ./jacobi-cuda data-t3/matriz250.txt
+
+echo "CUDA: 500"
+time ./jacobi-cuda data-t3/matriz500.txt
+
+echo "CUDA: 1000"
+time ./jacobi-cuda data-t3/matriz1000.txt
+
+echo "CUDA: 1500"
+time ./jacobi-cuda data-t3/matriz1500.txt
+
+echo "CUDA: 2000"
+time ./jacobi-cuda data-t3/matriz2000.txt
+
+echo "CUDA: 3000"
+time ./jacobi-cuda data-t3/matriz3000.txt
+
+echo "CUDA: 4000"
+time ./jacobi-cuda data-t3/matriz4000.txt
